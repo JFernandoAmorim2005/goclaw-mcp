@@ -19,10 +19,10 @@ export function registerTraceTools(server: McpServer, client: GoClawClient): voi
         const traces = await client.traces.listTraces(params);
         if (!traces.length) return { content: [{ type: "text", text: "No traces found." }] };
         const text = traces
-          .map(
-            (t) =>
-              `- \`${t.trace_id}\` [${t.status}] — ${t.duration_ms}ms | in: ${t.input_tokens} out: ${t.output_tokens} | cost: $${t.cost} | ${t.created_at}`
-          )
+          .map((t) => {
+            const ta = t as any;
+            return `- \`${ta.id}\` [${ta.status}] — ${ta.name ?? ""} | in: ${ta.total_input_tokens ?? 0} out: ${ta.total_output_tokens ?? 0} | cost: $${ta.total_cost ?? 0} | ${ta.created_at}`;
+          })
           .join("\n");
         return { content: [{ type: "text", text: `**Traces**\n${text}` }] };
       } catch (err) {
@@ -37,19 +37,20 @@ export function registerTraceTools(server: McpServer, client: GoClawClient): voi
     { trace_id: z.string().describe("Trace ID") },
     async ({ trace_id }) => {
       try {
-        const t = await client.traces.getTrace(trace_id);
-        const spans = t.spans
+        const resp = (await client.traces.getTrace(trace_id)) as any;
+        const tr = resp.trace ?? resp;
+        const spanList: any[] = resp.spans ?? [];
+        const spans = spanList
           .map(
             (s) =>
-              `  - ${s.name} (${s.provider}/${s.model}) [${s.status}] — ${s.duration_ms}ms | in: ${s.input_tokens} out: ${s.output_tokens}`
+              `  - ${s.name} (${s.provider ?? "?"}/${s.model ?? "?"}) [${s.status}] — ${s.duration_ms}ms`
           )
           .join("\n");
         const text = [
-          `**Trace ${t.trace_id}** [${t.status}]`,
-          `- Duration: ${t.duration_ms}ms`,
-          `- Tokens: in=${t.input_tokens} out=${t.output_tokens}`,
-          `- Cost: $${t.cost}`,
-          `- Spans:\n${spans}`,
+          `**Trace ${tr.id ?? trace_id}** [${tr.status}]`,
+          `- Tokens: in=${tr.total_input_tokens ?? 0} out=${tr.total_output_tokens ?? 0}`,
+          `- Cost: $${tr.total_cost ?? 0}`,
+          `- Spans (${spanList.length}):\n${spans}`,
         ].join("\n");
         return { content: [{ type: "text", text }] };
       } catch (err) {

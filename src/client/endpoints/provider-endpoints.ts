@@ -5,7 +5,10 @@ import type { Provider, CreateProviderRequest, UpdateProviderRequest } from "../
 
 export function providerEndpoints(http: HttpClient) {
   return {
-    listProviders: () => http.get<Provider[]>("/v1/providers"),
+    listProviders: async () => {
+      const r = await http.get<any>("/v1/providers");
+      return (r?.providers ?? []) as Provider[];
+    },
     getProvider: (id: string) => http.get<Provider>(`/v1/providers/${id}`),
     createProvider: (data: CreateProviderRequest) =>
       http.post<Provider>("/v1/providers", data),

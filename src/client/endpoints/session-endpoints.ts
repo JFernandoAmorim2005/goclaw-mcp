@@ -1,28 +1,18 @@
-/** Session endpoints: list, preview, delete, reset, label */
+/** Session endpoints: list.
+ * NOTE: preview/delete/reset/label are WebSocket-only on the gateway — removed. */
 
 import type { HttpClient } from "../http-client.js";
-import type { Session, SessionPreview } from "../types.js";
+import type { Session } from "../types.js";
 
 export function sessionEndpoints(http: HttpClient) {
   return {
-    listSessions: (params?: { agent_id?: string; limit?: number }) => {
+    listSessions: async (params?: { agent_id?: string; limit?: number }) => {
       const qs = new URLSearchParams();
       if (params?.agent_id) qs.set("agent_id", params.agent_id);
       if (params?.limit) qs.set("limit", String(params.limit));
       const query = qs.toString();
-      return http.get<Session[]>(`/v1/sessions${query ? `?${query}` : ""}`);
+      const r = await http.get<any>(`/v1/sessions${query ? `?${query}` : ""}`);
+      return (r?.sessions ?? []) as Session[];
     },
-    previewSession: (sessionKey: string, limit?: number) => {
-      const qs = limit ? `?limit=${limit}` : "";
-      return http.get<SessionPreview>(
-        `/v1/sessions/${encodeURIComponent(sessionKey)}/preview${qs}`
-      );
-    },
-    deleteSession: (sessionKey: string) =>
-      http.del(`/v1/sessions/${encodeURIComponent(sessionKey)}`),
-    resetSession: (sessionKey: string) =>
-      http.post(`/v1/sessions/${encodeURIComponent(sessionKey)}/reset`),
-    labelSession: (sessionKey: string, label: string) =>
-      http.patch(`/v1/sessions/${encodeURIComponent(sessionKey)}`, { label }),
   };
 }

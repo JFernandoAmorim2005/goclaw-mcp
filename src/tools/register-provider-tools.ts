@@ -15,7 +15,10 @@ export function registerProviderTools(server: McpServer, client: GoClawClient): 
         const providers = await client.providers.listProviders();
         if (!providers.length) return { content: [{ type: "text", text: "No providers configured." }] };
         const text = providers
-          .map((p) => `- **${p.name}** (${p.type}) — ${p.models.length} models [${p.enabled ? "enabled" : "disabled"}]`)
+          .map((p) => {
+            const pa = p as any;
+            return `- **${pa.display_name || pa.name}** (\`${pa.name}\`) — ${pa.provider_type ?? pa.type ?? "?"} [${pa.enabled ? "enabled" : "disabled"}]`;
+          })
           .join("\n");
         return { content: [{ type: "text", text: `**Providers**\n${text}` }] };
       } catch (err) {
@@ -30,12 +33,11 @@ export function registerProviderTools(server: McpServer, client: GoClawClient): 
     { id: z.string().describe("Provider ID") },
     async ({ id }) => {
       try {
-        const p = await client.providers.getProvider(id);
+        const p = (await client.providers.getProvider(id)) as any;
         const text = [
-          `**${p.name}** (${p.type})`,
+          `**${p.display_name || p.name}** (\`${p.name}\`)`,
           `- ID: ${p.id}`,
-          `- Base URL: ${p.base_url}`,
-          `- Models: ${p.models.join(", ")}`,
+          `- Type: ${p.provider_type ?? p.type ?? "?"}`,
           `- Enabled: ${p.enabled}`,
         ].join("\n");
         return { content: [{ type: "text", text }] };

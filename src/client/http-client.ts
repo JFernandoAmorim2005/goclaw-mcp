@@ -5,7 +5,6 @@
 
 import { GoClawError, type ApiErrorData } from "../lib/errors.js";
 import { logger } from "../lib/logger.js";
-import type { ApiResponse } from "./types.js";
 
 export interface HttpClientOptions {
   baseUrl: string;
@@ -100,16 +99,33 @@ export class HttpClient {
           continue;
         }
 
-        // Parse response
-        const data = (await response.json()) as ApiResponse<T>;
+        // No-content SUCCESS responses (e.g. DELETE 204) — nothing to parse.
+        // Gated on response.ok so an empty-bodied error isn't swallowed as success.
+        if (response.ok && (response.status === 204 || response.headers.get("content-length") === "0")) {
+          this.onSuccess();
+          return undefined as T;
+        }
 
-        if (!data.ok && data.error) {
+        // GoClaw returns the body directly (no {ok,payload} envelope).
+        // Errors arrive as {error:{code,message}} or {error:"string"}.
+        const data = (await response.json()) as any;
+
+        if (!response.ok || (data && data.error)) {
+          const e = data?.error;
+          const apiErr: ApiErrorData =
+            typeof e === "string"
+              ? { code: "ERR_API", message: e, status_code: response.status }
+              : {
+                  code: e?.code ?? "ERR_API",
+                  message: e?.message ?? `HTTP ${response.status}`,
+                  status_code: response.status,
+                };
           this.onFailure();
-          throw new GoClawError(data.error as ApiErrorData);
+          throw new GoClawError(apiErr);
         }
 
         this.onSuccess();
-        return data.payload;
+        return data as T;
       } catch (err) {
         if (err instanceof GoClawError) throw err;
 

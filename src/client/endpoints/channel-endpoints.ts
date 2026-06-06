@@ -5,8 +5,11 @@ import type { Channel } from "../types.js";
 
 export function channelEndpoints(http: HttpClient) {
   return {
-    listChannels: () => http.get<Channel[]>("/v1/channels"),
+    listChannels: async () => {
+      const r = await http.get<any>("/v1/channels/instances");
+      return (r?.instances ?? []) as Channel[];
+    },
     toggleChannel: (channel: string, enabled: boolean) =>
-      http.patch<Channel>(`/v1/channels/${encodeURIComponent(channel)}`, { enabled }),
+      http.put<Channel>(`/v1/channels/instances/${encodeURIComponent(channel)}`, { enabled }),
   };
 }

@@ -5,7 +5,10 @@ import type { Skill } from "../types.js";
 
 export function skillEndpoints(http: HttpClient) {
   return {
-    listSkills: () => http.get<Skill[]>("/v1/skills"),
+    listSkills: async () => {
+      const r = await http.get<any>("/v1/skills");
+      return (r?.skills ?? []) as Skill[];
+    },
     getSkill: (id: string) => http.get<Skill>(`/v1/skills/${id}`),
     updateSkill: (id: string, data: Partial<Skill>) =>
       http.put<Skill>(`/v1/skills/${id}`, data),

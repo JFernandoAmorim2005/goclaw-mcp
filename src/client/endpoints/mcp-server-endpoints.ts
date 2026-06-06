@@ -9,7 +9,10 @@ import type {
 
 export function mcpServerEndpoints(http: HttpClient) {
   return {
-    listMcpServers: () => http.get<McpServerEntry[]>("/v1/mcp/servers"),
+    listMcpServers: async () => {
+      const r = await http.get<any>("/v1/mcp/servers");
+      return (r?.servers ?? []) as McpServerEntry[];
+    },
     getMcpServer: (id: string) => http.get<McpServerEntry>(`/v1/mcp/servers/${id}`),
     createMcpServer: (data: CreateMcpServerRequest) =>
       http.post<McpServerEntry>("/v1/mcp/servers", data),
