@@ -5,12 +5,12 @@
 
 set -euo pipefail
 
-REMOTE_USER="jfa"
+REMOTE_USER="famorim"           # user no servidor (não jfa)
 REMOTE_HOST="100.122.237.67"   # Tailscale IP do jfa-server
 REMOTE_DIR="/opt/goclaw-mcp"
 LOCAL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SERVICE_NAME="goclaw-mcp"
-PORT=3100
+PORT=3200  # 3100 ocupado pelo Grafana no Ubuntu
 
 echo "==> GoClaw MCP — Deploy HTTP Mode"
 echo "    Local:  $LOCAL_DIR"
